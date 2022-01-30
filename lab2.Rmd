@@ -3,7 +3,6 @@ title: "Lab 2 - Community"
 author: "Joe DeCesaro"
 date: "1/29/2022"
 output: html_document
-bibliography: ["ml-env.bib"]
 ---
 
 ```{r setup, include=FALSE}
