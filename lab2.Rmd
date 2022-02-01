@@ -54,81 +54,78 @@ In _k_-means clustering, the number of clusters needs to be specified. The algor
 
 These two steps are repeated until the within cluster variation cannot be reduced any further. The within cluster variation is calculated as the sum of the euclidean distance between the data points and their respective cluster centroids.
 
-#### Load and plot the `iris` dataset
+#### Load and plot the `penguins` dataset
 ```{r}
 # load R packages
 librarian::shelf(
-  dplyr, DT, ggplot2, tibble, factoextra)
+  dplyr, DT, ggplot2, palmerpenguins, skimr, tibble)
 
 # set seed for reproducible results
 set.seed(42)
 
 # load the dataset
-data("iris")
+data("penguins")
 
 # look at documentation in RStudio
 if (interactive())
-  help(iris)
+  help(penguins)
 
 # show data table
-datatable(iris)
+datatable(penguins)
+# skim the table for a summary
+skim(penguins)
 
-# plot petal length vs width, species naive
+# remove the rows with NAs
+penguins <- na.omit(penguins)
+```
+
+```{r}
+# plot bill length vs depth, species naive
 ggplot(
-  iris, aes(Petal.Length, Petal.Width)) +
+  penguins, aes(bill_length_mm, bill_depth_mm)) +
   geom_point()
 
-# plot petal length vs width, color by species
+# plot bill length vs depth, color by species
 legend_pos <- theme(
     legend.position = c(0.95, 0.05),
     legend.justification = c("right", "bottom"),
     legend.box.just = "right")
 ggplot(
-  iris, aes(Petal.Length, Petal.Width, color = Species)) +
+  penguins, aes(bill_length_mm, bill_depth_mm, color = species)) +
   geom_point() +
   legend_pos
 ```
 
-#### Cluster `iris` using `kmeans()`
+#### Cluster `penguins` using `kmeans()`
 
 ```{r}
 # cluster using kmeans
 k <- 3  # number of clusters
-iris_k <- kmeans(
-  iris %>% 
-    select(Petal.Length, Petal.Width), 
+penguins_k <- kmeans(
+  penguins %>% 
+    select(bill_length_mm, bill_depth_mm), 
   centers = k)
 
 # show cluster result
-iris_k
+penguins_k
 
 # compare clusters with species (which were not used to cluster)
-table(iris_k$cluster, iris$Species)
+table(penguins_k$cluster, penguins$species)
 ```
-
-**Question**: How many observations could be considered "misclassified" if expecting petal length and width to differentiate between species?
-6 observations.
 
 ```{r}
 # extract cluster assignment per observation
-Cluster = factor(iris_k$cluster)
+Cluster = factor(penguins_k$cluster)
 
-ggplot(iris, aes(Petal.Length, Petal.Width, color = Cluster)) +
+ggplot(penguins, aes(bill_length_mm, bill_depth_mm, color = Cluster)) +
   geom_point() + 
   legend_pos
 ```
 
-```{r, eval=F, echo=F}
-# **Task**: Highlight the "misclassified" points in the plot. _Hints: To get just the points misclassified, you can use `iris_k$cluster != as.integer(iris$Species)`, which can feed as the second argument into `filter(iris)`. To add another set of points to the ggplot, use `+ geom_point()` with arguments for: `data` with the additional points, `pch` [point shape](https://www.r-bloggers.com/2021/06/r-plot-pch-symbols-different-point-shapes-in-r/) with `fill=NA` for transparency and outline `color="red"`._
-obs_mis <- iris %>% 
-  filter(iris_k$cluster != as.integer(iris$Species))
-ggplot(iris, aes(Petal.Length, Petal.Width, color = Cluster)) +
-  geom_point() + 
-  legend_pos +
-  geom_point(data = obs_mis, color="red", fill=NA, pch=21)
-```
+**Question:** Comparing the observed species plot with 3 species with the kmeans() cluster plot with 3 clusters, where does this “unsupervised” kmeans() technique (that does not use species to “fit” the model) produce similar versus different results? One or two sentences would suffice. Feel free to mention ranges of values along the axes.
+- The kmeans() cluster plot seems to identify group 1 similarly with the Adelie group in the species plot. The kmeans() cluster plot seems to seperate the clusters along the bill_length measurement more than the bill_depth. In the species plot we can see that the Chinstrap and Gentoo seem to have similar bill_length measurements and differing bill_depth. 
 
-#### Plot Voronoi diagram of clustered `iris`
+#### Plot Voronoi diagram of clustered `penguins`
 
 This form of clustering assigns points to the cluster based on nearest centroid. You can see the breaks more clearly with a [Voronoi diagram](https://en.wikipedia.org/wiki/Voronoi_diagram).
 
@@ -136,87 +133,99 @@ This form of clustering assigns points to the cluster based on nearest centroid.
 librarian::shelf(ggvoronoi, scales)
 
 # define bounding box for geom_voronoi()
+xr <- extendrange(range(penguins$bill_length_mm), f=0.1)
+yr <- extendrange(range(penguins$bill_depth_mm), f=0.1)
 box <- tribble(
-  ~Petal.Length, ~Petal.Width, ~group,
-  1, 0.1, 1,
-  1, 2.5, 1,
-  7, 2.5, 1,
-  7, 0.1, 1,
-  1, 0.1, 1) %>% 
+  ~bill_length_mm, ~bill_depth_mm, ~group,
+  xr[1], yr[1], 1,
+  xr[1], yr[2], 1,
+  xr[2], yr[2], 1,
+  xr[2], yr[1], 1,
+  xr[1], yr[1], 1) %>% 
   data.frame()
 
 # cluster using kmeans
 k <- 3  # number of clusters
-iris_k <- kmeans(
-  iris %>% 
-    select(Petal.Length, Petal.Width), 
+penguins_k <- kmeans(
+  penguins %>% 
+    select(bill_length_mm, bill_depth_mm), 
   centers = k)
 
 # extract cluster assignment per observation
-Cluster = factor(iris_k$cluster)
+Cluster = factor(penguins_k$cluster)
 
 # extract cluster centers
-ctrs <- as.data.frame(iris_k$centers) %>% 
+ctrs <- as.data.frame(penguins_k$centers) %>% 
   mutate(
     Cluster = factor(1:k))
 
 # plot points with voronoi diagram showing nearest centroid
-ggplot(iris, aes(Petal.Length, Petal.Width, color = Cluster)) +
+ggplot(penguins, aes(bill_length_mm, bill_depth_mm, color = Cluster)) +
   geom_point() + 
   legend_pos +
   geom_voronoi(
-    data = ctrs, aes(fill=Cluster), color = NA, alpha=0.5, outline = box) + 
+    data = ctrs, aes(fill=Cluster), color = NA, alpha=0.5, 
+    outline = box) + 
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0, 0)) +
   geom_point(
     data = ctrs, pch=23, cex=2, fill="black")
 ```
 
 **Task**: Show the Voronoi diagram for fewer (`k=2`) and more (`k=8`) clusters to see how assignment to cluster centroids work.
+
 ```{r}
 # cluster using kmeans
 k <- 2  # number of clusters
-iris_k <- kmeans(
-  iris %>% 
-    select(Petal.Length, Petal.Width), 
+penguins_k <- kmeans(
+  penguins %>% 
+    select(bill_length_mm, bill_depth_mm), 
   centers = k)
 
 # extract cluster assignment per observation
-Cluster = factor(iris_k$cluster)
+Cluster = factor(penguins_k$cluster)
 
 # extract cluster centers
-ctrs <- as.data.frame(iris_k$centers) %>% 
+ctrs <- as.data.frame(penguins_k$centers) %>% 
   mutate(
     Cluster = factor(1:k))
 
 # plot points with voronoi diagram showing nearest centroid
-ggplot(iris, aes(Petal.Length, Petal.Width, color = Cluster)) +
+ggplot(penguins, aes(bill_length_mm, bill_depth_mm, color = Cluster)) +
   geom_point() + 
   legend_pos +
   geom_voronoi(
-    data = ctrs, aes(fill=Cluster), color = NA, alpha=0.5, outline = box) + 
+    data = ctrs, aes(fill=Cluster), color = NA, alpha=0.5, 
+    outline = box) + 
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0, 0)) +
   geom_point(
     data = ctrs, pch=23, cex=2, fill="black")
 
 # cluster using kmeans
 k <- 8  # number of clusters
-iris_k <- kmeans(
-  iris %>% 
-    select(Petal.Length, Petal.Width), 
+penguins_k <- kmeans(
+  penguins %>% 
+    select(bill_length_mm, bill_depth_mm), 
   centers = k)
 
 # extract cluster assignment per observation
-Cluster = factor(iris_k$cluster)
+Cluster = factor(penguins_k$cluster)
 
 # extract cluster centers
-ctrs <- as.data.frame(iris_k$centers) %>% 
+ctrs <- as.data.frame(penguins_k$centers) %>% 
   mutate(
     Cluster = factor(1:k))
 
 # plot points with voronoi diagram showing nearest centroid
-ggplot(iris, aes(Petal.Length, Petal.Width, color = Cluster)) +
+ggplot(penguins, aes(bill_length_mm, bill_depth_mm, color = Cluster)) +
   geom_point() + 
   legend_pos +
   geom_voronoi(
-    data = ctrs, aes(fill=Cluster), color = NA, alpha=0.5, outline = box) + 
+    data = ctrs, aes(fill=Cluster), color = NA, alpha=0.5, 
+    outline = box) + 
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0, 0)) +
   geom_point(
     data = ctrs, pch=23, cex=2, fill="black")
 ```
@@ -264,6 +273,10 @@ sites_euclidean
 sites_bray <- vegdist(sites, method="bray")
 sites_bray
 ```
+**Question:** In your own words, how does Bray Curtis differ from Euclidean distance? See sites_euclidean versus sites_bray from lab code, slides from Lecture 05. Clustering and reading Chapter 8 of Kindt and Coe (2005).
+- Euclidean Distance: measures the distance between 2 points and depends on the abundance of each species, not just species shared. Can technically have any value greater than zero if not standardized with proportionality.
+- Bray Curtis: dissimilarity is based on the sum of lowest counts of shared species between sites over the sum of all species. Only has values range from 0 to 1.
+
 
 #### Bray-Curtis Dissimilarity on `sites` 
 
@@ -289,15 +302,19 @@ as.matrix(d)[1:5, 1:5]
 
 # Hierarchical clustering using Complete Linkage
 hc1 <- hclust(d, method = "complete" )
+```
 
+**Question:** Question: Which function comes first, vegdist() or hclust(), and why? See HOMLR 21.3.1 Agglomerative hierarchical clustering.
+-vegdist() comes first because you need to generate a matrix with a specified distance method for the hclust() function to use to when it builds its clusters.
+
+```{r}
 # Dendrogram plot of hc1
 plot(hc1, cex = 0.6, hang = -1)
-
 
 # Compute agglomerative clustering with agnes
 hc2 <- agnes(dune, method = "complete")
 
-# Agglomerative coefficient
+# Agglomerative coefficient for complete linkage
 hc2$ac
 
 # Dendrogram plot of hc2
@@ -315,7 +332,6 @@ ac <- function(x) {
 # get agglomerative coefficient for each linkage method
 purrr::map_dbl(m, ac)
 
-
 # Compute ward linkage clustering with agnes
 hc3 <- agnes(dune, method = "ward")
 
@@ -325,6 +341,14 @@ hc3$ac
 # Dendrogram plot of hc3
 plot(hc3, which.plot = 2)
 ```
+**Question:** Question: Which function comes first, vegdist() or hclust(), and why? See HOMLR 21.3.1 Agglomerative hierarchical clustering.
+-vegdist() comes first because you need to generate a matrix with a specified distance method for the hclust() function to use to when it builds its clusters.
+
+**Question:** In your own words, how does hclust() differ from agnes()? See HOMLR 21.3.1 Agglomerative hierarchical clustering and help documentation (?hclust(), ?agnes()).
+- agnes() generally does the same things as hclust() with the addition that it also can give you the agglomerative coefficient, which is a measure of the strength of the clustering structure. Values closer to 1 suggest a more balanced cluster structure.
+
+**Question:** Of the 4 methods, which is the “best” model in terms of Agglomerative Coefficient?
+- The “ward” method has the highest AC and would therefore be considered the “best”
 
 #### Divisive hierarchical clustering on `dune` 
 
@@ -337,6 +361,29 @@ hc4 <- diana(dune)
 # Divise coefficient; amount of clustering structure found
 hc4$dc
 ```
+**Question:**In your own words, how does agnes() differ from diana()? See HOMLR21.3.1 Agglomerative hierarchical clustering, slides from Lecture 05. Clusteringand help documentation (?agnes(),  ?diana()).
+- agnes() performs agglomerative hierarchical clustering and computes an agglomerative coefficient. diana() performs divisive hierarchical clustering and computes a divisive coefficient (closer to one suggests stronger group distinctions).
+
+#### Determining Optimal Clusters
+```{r}
+librarian::shelf(factoextra)
+
+# Plot cluster results
+p1 <- fviz_nbclust(dune, FUN = hcut, method = "wss",  k.max = 10) +
+  ggtitle("(A) Elbow method")
+
+p2 <- fviz_nbclust(dune, FUN = hcut, method = "silhouette", k.max = 10) +
+  ggtitle("(B) Silhouette method")
+
+p3 <- fviz_nbclust(dune, FUN = hcut, method = "gap_stat", k.max = 10) +
+  ggtitle("(C) Gap statistic")
+
+# Display plots side by side
+gridExtra::grid.arrange(p1, p2, p3, nrow = 1)
+```
+
+**Question:** Question: How do the optimal number of clusters compare between methods for those with a dashed line?
+- For the silhouette method the optimal number of clusters is 4, for the gap statistic method the optimal number of clusters is 3
 
 #### Working with dendrograms
 
@@ -370,6 +417,9 @@ fviz_dend(
   rect_border = "jco",
   k_colors = "jco")
 ```
+
+**Question:** In dendrogram plots, which is the biggest determinant of relatedness between observations: the distance between observations along the labeled axes or the height of their shared connection? See HOMLR 21.5 Working with dendrograms.
+- The height of their shared connection
 
 # Lab 2b - Ordination
 
