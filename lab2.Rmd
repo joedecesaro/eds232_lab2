@@ -307,9 +307,6 @@ as.matrix(d)[1:5, 1:5]
 hc1 <- hclust(d, method = "complete" )
 ```
 
-**Question:** Which function comes first, vegdist() or hclust(), and why? See HOMLR 21.3.1 Agglomerative hierarchical clustering.
-
--vegdist() comes first because you need to generate a matrix with a specified distance method for the hclust() function to use to when it builds its clusters.
 
 ```{r}
 # Dendrogram plot of hc1
@@ -347,7 +344,7 @@ plot(hc3, which.plot = 2)
 ```
 **Question:** Which function comes first, vegdist() or hclust(), and why? See HOMLR 21.3.1 Agglomerative hierarchical clustering.
 
--vegdist() comes first because you need to generate a matrix with a specified distance method for the hclust() function to use to when it builds its clusters.
+- vegdist() comes first because you need to generate a matrix with a specified distance method for the hclust() function to use to when it builds its clusters.
 
 **Question:** In your own words, how does hclust() differ from agnes()? See HOMLR 21.3.1 Agglomerative hierarchical clustering and help documentation (?hclust(), ?agnes()).
 
@@ -368,9 +365,10 @@ hc4 <- diana(dune)
 # Divise coefficient; amount of clustering structure found
 hc4$dc
 ```
+
 **Question:**In your own words, how does agnes() differ from diana()? See HOMLR21.3.1 Agglomerative hierarchical clustering, slides from Lecture 05. Clusteringand help documentation (?agnes(),  ?diana()).
 
-- agnes() performs agglomerative hierarchical clustering and computes an agglomerative coefficient. diana() performs divisive hierarchical clustering and computes a divisive coefficient (closer to one suggests stronger group distinctions).
+- agnes() performs agglomerative hierarchical clustering (leaves to root) and computes an agglomerative coefficient. diana() performs divisive hierarchical clustering (root to leaves) and computes a divisive coefficient (closer to 1 suggests stronger group distinctions).
 
 #### Determining Optimal Clusters
 ```{r}
@@ -514,6 +512,7 @@ my_pca@model$eigenvectors %>%
   ggplot(aes(pc1, pc2, label = feature)) +
   geom_text()
 ```
+
 **Question:** Why is the pca_method of “GramSVD” chosen over “GLRM”?
 
 - It is recommended to use GLRM when your data contains mostly categorical variables and GramSVD when data is mostly numeric. This data is mostly numeric so GramSVD is used.
@@ -524,11 +523,11 @@ my_pca@model$eigenvectors %>%
 
 **Question:** What category of grocery items contribute most to PC1? (These are related because they're bought most often together on a given grocery trip)
 
-- Alcohol products
+- Alcohol products, candy bars, and "quick stop" items
 
 **Question:** What category of grocery items contribute the least to PC1 but positively towards PC2?
 
-- Vegetables
+- Vegetables contribute the least to PC1 and drinks such as coffee, milk, and tea contribute the most to PC2
 
 ### Eigenvalue criterion
 
@@ -572,6 +571,7 @@ data.frame(
   geom_line() +
   geom_text(nudge_y = -.002)
 ```
+
 **Question:** How many principal components would you include to explain 90% of the total variance?
 
 - About 35 PCs
